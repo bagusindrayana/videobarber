@@ -1,0 +1,13 @@
+{
+    "name": "VideoBarber - Trim Video Online",
+    "display": "standalone",
+    "id": "video-barber",
+    "start_url": "/",
+    "icons": [
+		{
+		    "src": "favicon.png",
+		    "type": "image/png",
+		    "sizes": "128x128"
+		}
+    ]
+}
