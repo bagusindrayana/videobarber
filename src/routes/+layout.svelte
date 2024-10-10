@@ -46,9 +46,9 @@
 <svelte:head>
     {@html webManifestLink}
 </svelte:head>
-{#if deferredInstallEvent}
+<!-- {#if deferredInstallEvent}
     <button class="install-button" on:click={handleInstall}>Install</button>
-{/if}
+{/if} -->
 <slot />
 
 <style>
