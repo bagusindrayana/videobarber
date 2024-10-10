@@ -1,6 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
-
+import { SvelteKitPWA } from '@vite-pwa/sveltekit'
 
 const viteServerConfig = {
     name: 'log-request-middleware',
@@ -16,7 +16,7 @@ const viteServerConfig = {
 };
 
 export default defineConfig({
-	plugins: [sveltekit(),viteServerConfig],
+	plugins: [sveltekit(),viteServerConfig,SvelteKitPWA()],
 	optimizeDeps: {
 		exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
 	},

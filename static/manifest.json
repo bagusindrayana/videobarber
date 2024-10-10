@@ -1,13 +1,24 @@
 {
-    "name": "VideoBarber - Trim Video Online",
-    "display": "standalone",
-    "id": "video-barber",
-    "start_url": "/",
-    "icons": [
-		{
-		    "src": "favicon.png",
-		    "type": "image/png",
-		    "sizes": "128x128"
-		}
-    ]
+  "name": "VideoBarber - Trim Video Online",
+  "short_name": "VideoBarber",
+  "display": "standalone",
+  "id": "video-barber",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "pwa-64x64.png",
+      "type": "image/png",
+      "sizes": "64x64"
+    },
+    {
+      "src": "pwa-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
 }

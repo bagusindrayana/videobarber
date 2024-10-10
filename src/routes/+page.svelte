@@ -43,7 +43,7 @@
     }
 
     const loadFfmpeg = async () => {
-        const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+        const baseURL = "/ffmpeg";
         ffmpegRef = new FFmpeg();
         ffmpegRef.on("log", ({ message }) => {
             console.log(message);
@@ -56,8 +56,7 @@
         try {
             await ffmpegRef.load({
                 coreURL: `${baseURL}/ffmpeg-core.js`,
-                wasmURL: `${baseURL}/ffmpeg-core.wasm`,
-                workerURL: `${baseURL}/ffmpeg-core.worker.js`,
+                wasmURL: `${baseURL}/ffmpeg-core.wasm`
             });
             loaded = true;
         } catch (error) {
