@@ -95,7 +95,7 @@
   }
 </script>
 
-<div class="relative w-1/2 mx-auto bg-gray-500">
+<div class="relative w-full md:w-1/2 mx-auto bg-gray-500">
   <video
     src={videoSrc}
     bind:this={video}
@@ -107,67 +107,69 @@
     Your browser does not support the video tag.
   </video>
   <div
-    class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4"
+    class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-1 md:p-4"
   >
     <div class="flex items-center justify-between text-white">
-      <button
-        class="text-white hover:text-primary p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
-        on:click={togglePlay}
-      >
-        {#if isPlaying}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            ><g
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              ><rect width="4" height="16" x="14" y="4" rx="1" /><rect
-                width="4"
-                height="16"
-                x="6"
-                y="4"
-                rx="1"
-              /></g
-            ></svg
-          >
-        {:else}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            ><path
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="m6 3l14 9l-14 9z"
-            /></svg
-          >
-        {/if}
-      </button>
-      <div class="flex items-center space-x-2 flex-1 mx-4">
-        <span class="text-sm">{formatTime(currentTime)}</span>
-        <input
-          type="range"
-          min="{startTime}"
-          max="{endTime}"
-          step="1"
-          value={currentTime}
-          on:input={handleTimelineChange}
-          class="flex-1 appearance-none bg-gray-600 h-1 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
-        />
-        <span class="text-sm">{formatTime(endTime)}</span>
-      </div>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center flex-1">
         <button
-          class="text-white hover:text-primary p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+          class="text-white hover:text-primary p-0 md:p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+          on:click={togglePlay}
+        >
+          {#if isPlaying}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              ><g
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                ><rect width="4" height="16" x="14" y="4" rx="1" /><rect
+                  width="4"
+                  height="16"
+                  x="6"
+                  y="4"
+                  rx="1"
+                /></g
+              ></svg
+            >
+          {:else}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              ><path
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="m6 3l14 9l-14 9z"
+              /></svg
+            >
+          {/if}
+        </button>
+        <div class="flex items-center space-x-2 flex-1 mx-4">
+          <span class="text-sm">{formatTime(currentTime)}</span>
+          <input
+            type="range"
+            min={startTime}
+            max={endTime}
+            step="1"
+            value={currentTime}
+            on:input={handleTimelineChange}
+            class="flex-1 appearance-none bg-gray-600 h-1 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <span class="text-sm">{formatTime(endTime)}</span>
+        </div>
+      </div>
+      <div class="hidden md:flex items-center space-x-2 ">
+        <button
+          class="text-white hover:text-primary p-0 md:p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
           on:click={toggleMute}
         >
           {#if isMuted}

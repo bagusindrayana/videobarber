@@ -177,7 +177,7 @@
     <div
       id="timeline"
       class="relative h-8 bg-gray-200 rounded cursor-pointer"
-      on:click={(e) => handleTimelineClick(e)}
+      on:click={(e) => onTimelineClick(e)}
       use:onTimelineMount
     >
     
