@@ -258,7 +258,7 @@
     <title>VideoBarber - Trim Video Online</title>
     <meta name="description" content="Free Video Trimmer - VideoBarber" />
 </svelte:head>
-<main class="container mx-auto px-1 md:px-4 py-4 md:py-8 w-full h-screen overflow-hidden relative">
+<main class="container mx-auto px-1 md:px-4 py-4 md:py-8 w-full h-screen overflow-x-hidden relative">
     <div class="text-center mb-6">
         <div
             class="text-3xl font-boldtext-center flex justify-center items-center"

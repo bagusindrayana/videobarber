@@ -102,7 +102,7 @@
     on:timeupdate={onTimeUpdate}
     on:play={onPlay}
     on:seeked={onSeeked}
-    class=" w-full rounded-lg shadow-lg aspect-video"
+    class=" w-full rounded-lg shadow-lg aspect-video " style="max-height: 50vh;"
   >
     Your browser does not support the video tag.
   </video>
