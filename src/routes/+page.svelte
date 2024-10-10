@@ -87,7 +87,9 @@
     function handlePreviewChange(event: CustomEvent) {
         if (videoPlayer) {
             videoPlayer.updateVideoTime(event.detail.time);
+            currentTime = event.detail.time;
         }
+        
     }
 
     function handleTimeUpdate(event: CustomEvent) {

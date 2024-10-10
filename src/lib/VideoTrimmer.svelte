@@ -75,6 +75,8 @@
     showPreview = true;
   }
 
+
+
   function onTimelineLeave() {
     showPreview = false;
   }
@@ -95,8 +97,7 @@
   $: startPercentage = (startTime / videoDuration) * 100;
 
   const handleTimelineClick = (e: any) => {
-    const clickPosition =
-      (e.clientX - timelineRect.left) / timelineRect.width;
+    const clickPosition = (e.clientX - timelineRect.left) / timelineRect.width;
     const clickTime = clickPosition * videoDuration;
     dispatch("previewchange", { time: clickTime });
   };
@@ -123,7 +124,22 @@
         endTime = Math.max(newTime, startTime + 0.1);
       }
       dispatch("trimchange", { startTime, endTime });
-    dispatch("previewchange", { time: endTime });
+      dispatch("previewchange", { time: endTime });
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging) return;
+      const rect = timelineRef.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.targetTouches[0].clientX - rect.left, rect.width));
+      const newTime = (x / rect.width) * videoDuration;
+
+      if (isDragging === "start") {
+        startTime = Math.min(newTime, endTime - 0.1);
+      } else {
+        endTime = Math.max(newTime, startTime + 0.1);
+      }
+      dispatch("trimchange", { startTime, endTime });
+      dispatch("previewchange", { time: endTime });
     };
 
     const handleMouseUp = () => {
@@ -131,7 +147,9 @@
     };
 
     document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("touchmove", handleTouchMove);
     document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("touchend", handleMouseUp);
   });
 </script>
 
@@ -176,11 +194,10 @@
     <label>Timeline</label>
     <div
       id="timeline"
-      class="relative h-8 bg-gray-200 rounded cursor-pointer"
+      class="relative h-8 bg-gray-200 rounded cursor-pointer mx-4 md:mx-0"
       on:click={(e) => onTimelineClick(e)}
       use:onTimelineMount
     >
-    
       <div
         class="absolute top-0 bottom-0 bg-blue-500 opacity-50"
         style="left: {(startTime / videoDuration) * 100}%; right: {100 -
@@ -194,19 +211,21 @@
         class="absolute top-0 bottom-0 w-1 bg-blue-700 cursor-ew-resize"
         style="left: {(startTime / videoDuration) * 100}%;"
         on:mousedown={(e) => handleTrimHandleDrag(e, "start")}
+        on:touchstart={(e) => handleTrimHandleDrag(e, "start")}
       />
       <div
         class="absolute top-0 bottom-0 w-1 bg-blue-700 cursor-ew-resize"
         style="left: {(endTime / videoDuration) * 100}%"
         on:mousedown={(e) => handleTrimHandleDrag(e, "end")}
+        on:touchstart={(e) => handleTrimHandleDrag(e, "end")}
       />
-      
+
       <div
-      class="absolute bottom-full"
-      style="left: {previewPosition}px; transform: translateX(-50%);"
-    >
-      <FramePreview {videoSrc} {previewTime} visible={showPreview} />
-    </div>
+        class="absolute bottom-full"
+        style="left: {previewPosition}px; transform: translateX(-50%);"
+      >
+        <FramePreview {videoSrc} {previewTime} visible={showPreview} />
+      </div>
     </div>
     <div class="flex justify-between text-sm text-muted-foreground">
       <!-- <span>{formatTime(startTime)}</span>
@@ -215,45 +234,4 @@
   </div>
 </div>
 
-<style>
-  input[type="range"] {
-    -webkit-appearance: none;
-    width: 100%;
-    background: transparent;
-    pointer-events: none;
-  }
 
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    height: 20px;
-    width: 20px;
-    border-radius: 50%;
-    background: #4299e1;
-    cursor: pointer;
-    margin-top: -8px;
-    pointer-events: auto;
-  }
-
-  input[type="range"]::-moz-range-thumb {
-    height: 20px;
-    width: 20px;
-    border-radius: 50%;
-    background: #4299e1;
-    cursor: pointer;
-    pointer-events: auto;
-  }
-
-  input[type="range"]::-webkit-slider-runnable-track {
-    width: 100%;
-    height: 4px;
-    background: transparent;
-    border-radius: 2px;
-  }
-
-  input[type="range"]::-moz-range-track {
-    width: 100%;
-    height: 4px;
-    background: transparent;
-    border-radius: 2px;
-  }
-</style>
