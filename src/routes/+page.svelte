@@ -332,7 +332,7 @@
                 on:previewchange={handlePreviewChange}
             />
 
-            <div class="mt-4 text-center">
+            <div class="mt-4 text-center mb-8">
                 <p>
                     Trim Range: {startTime.toFixed(2)}s - {endTime.toFixed(2)}s
                 </p>
@@ -364,7 +364,7 @@
         <p class="text-center text-gray-500">Loading ffmpeg...</p>
     {/if}
 
-    <div class="absolute bottom-0 p-2 left-0 right-0 text-center">
+    <div class="fixed bottom-0 p-0 md:p-2 left-0 right-0 text-center">
         <p>@bagusindrayana</p>
     </div>
 </main>
