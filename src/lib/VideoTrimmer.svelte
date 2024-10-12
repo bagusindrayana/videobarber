@@ -75,8 +75,6 @@
     showPreview = true;
   }
 
-
-
   function onTimelineLeave() {
     showPreview = false;
   }
@@ -130,7 +128,10 @@
     const handleTouchMove = (e: TouchEvent) => {
       if (!isDragging) return;
       const rect = timelineRef.getBoundingClientRect();
-      const x = Math.max(0, Math.min(e.targetTouches[0].clientX - rect.left, rect.width));
+      const x = Math.max(
+        0,
+        Math.min(e.targetTouches[0].clientX - rect.left, rect.width),
+      );
       const newTime = (x / rect.width) * videoDuration;
 
       if (isDragging === "start") {
@@ -151,50 +152,26 @@
     document.addEventListener("mouseup", handleMouseUp);
     document.addEventListener("touchend", handleMouseUp);
   });
+
+  function formatTime(time: number) {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }
 </script>
 
 <div class="w-full max-w-3xl mx-auto mt-4">
+  
+  
   <div class="flex justify-between mb-2">
-    <span>Start: {startTime.toFixed(2)}s</span>
-    <span>End: {endTime.toFixed(2)}s</span>
+    <span>From : {formatTime(startTime)}</span>
+    <span>To : {formatTime(endTime)}</span>
   </div>
-  <!-- <div class="relative h-8" on:click={onTimelineClick} use:onTimelineMount>
-    <div class="absolute w-full h-2 bg-gray-300 rounded-full mt-3"></div>
-    <div
-      class="absolute h-2 bg-blue-500 rounded-full mt-3"
-      style="width: {progressPercentage}%; left: {startPercentage}%"
-    ></div>
-    <input
-      type="range"
-      min="0"
-      max={videoDuration}
-      step="0.01"
-      bind:value={startTime}
-      on:input={onStartChange}
-      class="absolute w-full"
-    />
-    <input
-      type="range"
-      min="0"
-      max={videoDuration}
-      step="0.01"
-      bind:value={endTime}
-      on:input={onEndChange}
-      class="absolute w-full"
-    />
-    <div
-      class="absolute bottom-full"
-      style="left: {previewPosition}px; transform: translateX(-50%);"
-    >
-      <FramePreview {videoSrc} {previewTime} visible={showPreview} />
-    </div>
-  </div> -->
-
-  <div class="space-y-2">
-    <label>Timeline</label>
+  <div class="space-y-2 px-4 md:px-0 ">
+    <label >Timeline</label>
     <div
       id="timeline"
-      class="relative h-8 bg-gray-200 rounded cursor-pointer mx-4 md:mx-0"
+      class="relative h-8 bg-gray-200 rounded cursor-pointer"
       on:click={(e) => onTimelineClick(e)}
       use:onTimelineMount
     >
@@ -221,17 +198,24 @@
       />
 
       <div
-        class="absolute bottom-full"
+        class="absolute bottom-full  pointer-events-none"
         style="left: {previewPosition}px; transform: translateX(-50%);"
       >
         <FramePreview {videoSrc} {previewTime} visible={showPreview} />
       </div>
     </div>
+    <!-- <div class="flex justify-between text-sm text-muted-foreground">
+      <span>From : {formatTime(startTime)}</span>
+      <span>To : {formatTime(endTime)}</span>
+    </div> -->
+   
     <div class="flex justify-between text-sm text-muted-foreground">
-      <!-- <span>{formatTime(startTime)}</span>
-        <span>{formatTime(endTime)}</span> -->
+      <span>Length : {formatTime(endTime-startTime)}</span>
+    </div>
+    <div class="text-center">
+      <p>
+        Trim Range: {formatTime(startTime)} - {formatTime(endTime)}
+    </p>
     </div>
   </div>
 </div>
-
-

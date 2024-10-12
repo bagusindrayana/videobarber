@@ -101,7 +101,7 @@
     bind:this={video}
     on:timeupdate={onTimeUpdate}
     on:play={onPlay}
-    on:seeked={onSeeked}
+    
     class=" w-full rounded-lg shadow-lg aspect-video " style="max-height: 50vh;"
   >
     Your browser does not support the video tag.
@@ -159,7 +159,7 @@
             type="range"
             min={startTime}
             max={endTime}
-            step="1"
+            step="0.1"
             value={currentTime}
             on:input={handleTimelineChange}
             class="flex-1 appearance-none bg-gray-600 h-1 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"

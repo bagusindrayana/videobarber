@@ -42,7 +42,7 @@
     bind:this={canvas}
     width="160"
     height="90"
-    class="border border-gray-300 rounded shadow-lg"
+    class="border border-gray-300 rounded shadow-lg pointer-events-none"
     class:hidden={!visible}
   ></canvas>
   
