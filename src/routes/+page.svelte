@@ -24,6 +24,11 @@
     let videoQuality = "high";
     let audioEnabled = true;
     let isGif = false;
+    let exportFileName = "trimmed-video";
+
+    // Drag and drop state
+    let isDragging = false;
+    let dragCounter = 0;
 
     onMount(() => {
         loadFfmpeg();
@@ -32,6 +37,58 @@
             videoPlayer = videoEl as any;
         }
     });
+
+    function handleDragEnter(e: DragEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter++;
+        if (!videoSrc) {
+            isDragging = true;
+        }
+    }
+
+    function handleDragLeave(e: DragEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter--;
+        if (dragCounter === 0) {
+            isDragging = false;
+        }
+    }
+
+    function handleDragOver(e: DragEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function handleDrop(e: DragEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        isDragging = false;
+        dragCounter = 0;
+
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) {
+            const file = files[0];
+            if (file.type.startsWith('video/')) {
+                loadVideoFile(file);
+            } else {
+                alert('Please drop a video file');
+            }
+        }
+    }
+
+    function loadVideoFile(file: File) {
+        videoSrc = URL.createObjectURL(file);
+        videoBlob = file;
+        startTime = 0;
+        endTime = 0;
+        currentTime = 0;
+        videoDuration = 0;
+        fileName = file.name;
+        // Set default export name without extension
+        exportFileName = file.name.replace(/\.[^/.]+$/, "");
+    }
 
     async function readFile(file: Blob): Promise<Uint8Array> {
         return new Promise((resolve) => {
@@ -104,14 +161,7 @@
     function handleFileSelect(event: Event) {
         const input = event.target as HTMLInputElement;
         if (input.files && input.files[0]) {
-            const file = input.files[0];
-            videoSrc = URL.createObjectURL(file);
-            videoBlob = file;
-            startTime = 0;
-            endTime = 0;
-            currentTime = 0;
-            videoDuration = 0;
-            fileName = file.name;
+            loadVideoFile(input.files[0]);
         }
     }
 
@@ -162,8 +212,8 @@
             const a = document.createElement("a");
             a.href = url;
             
-            const baseFileName = fileName.replace(/\.[^/.]+$/, "");
-            a.download = `${baseFileName}-trimmed.${extension}`;
+            const finalFileName = exportFileName.trim() || "trimmed-video";
+            a.download = `${finalFileName}.${extension}`;
             
             document.body.appendChild(a);
             a.click();
@@ -238,7 +288,6 @@
         
         await ffmpegRef.writeFile(inputFileName, await readFile(videoBlob));
         
-        // Calculate fps based on duration to keep gif size reasonable
         const duration = end - start;
         const fps = duration > 10 ? 10 : 15;
         const scale = 480;
@@ -264,118 +313,174 @@
     <meta name="description" content="Free Video Trimmer - VideoBarber" />
 </svelte:head>
 
-<main class="w-full h-screen overflow-x-hidden relative py-4 md:py-8">
-    <div class="container mx-auto px-1 md:px-4 w-full relative mb-8">
-        <div class="text-center mb-2 md:mb-6">
-            <div class="text-3xl font-boldtext-center flex justify-center items-center">
-                <span>Video Barber</span>
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="50"
-                    height="50"
-                    viewBox="0 0 72 72"
-                >
-                    <path
-                        fill="#ea5a47"
-                        d="M24.488 52.117c-.544 2.69-.44 4.994.305 6.66c2.054 4.6 7.465 6.677 12.07 4.62a9.07 9.07 0 0 0 4.809-5.078a9.08 9.08 0 0 0-.19-6.992c-1.097-2.459-2.47-4.353-5.066-5.103c-.31-.09-.04-1.131.084-1.427l.84-2.813l-7.6-2.53c-3.42 7.73-5.104 11.923-5.252 12.663m10.032-2.005a4.68 4.68 0 0 1 2.938 2.083a4.68 4.68 0 0 1 .602 3.551a4.68 4.68 0 0 1-2.083 2.938a4.68 4.68 0 0 1-3.551.602a4.68 4.68 0 0 1-2.938-2.084a4.68 4.68 0 0 1-.602-3.55a4.67 4.67 0 0 1 2.084-2.938a4.68 4.68 0 0 1 3.55-.602"
-                    />
-                    <path
-                        fill="#d0cfce"
-                        d="m37.009 42.077l12.133-30.044c-2.187.695-4.555 1.24-6.5 3.213c-2.443 2.48-4.225 6.392-4.225 6.392s-7.584 16.522-7.952 17.344c-.014.03 6.544 3.095 6.544 3.095"
-                    />
-                    <path
-                        fill="#9b9b9a"
-                        d="M61.011 24.5s-15.29 5.18-14.812 4.951l-.004-.004l-3.946 1.648l-5.136 12.966l5.709-2.744l.001-.015c-.102.034 9.415-5.642 9.589-5.731c4.024-2.078 7.027-6.144 8.6-11.07"
-                    />
-                    <path
-                        fill="#d22f27"
-                        d="M21.833 32.884c-4.082-1.822-10.4.207-12.222 4.288c-1.823 4.083-.179 10.431 3.903 12.254c1.478.66 3.943 1.056 6.33.573c.103-.02 3.367-.227 2.978.026l2.285-1.063c1.178-2.972 4.716-11.343 5.006-11.988l-2.738 1.313l-.006.012c-.018.284-3.478-4.495-5.536-5.415m-.249 10.35a4.5 4.5 0 0 1-2.837 2.013a4.55 4.55 0 0 1-5.442-3.419a4.5 4.5 0 0 1 .582-3.43a4.5 4.5 0 0 1 2.837-2.011a4.52 4.52 0 0 1 3.43.581a4.5 4.5 0 0 1 2.012 2.837a4.5 4.5 0 0 1-.582 3.43"
-                    />
-                    <g
-                        fill="none"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-miterlimit="10"
-                        stroke-width="2"
-                    >
-                        <path
-                            d="M29.584 39.621c3.058-6.88 6.652-14.644 7.8-16.865c2.07-4.012 5.733-10.19 12.54-11.194l-12.66 30.554"
-                        />
-                        <path
-                            d="M41.462 50.976a9.08 9.08 0 0 0-5.791-5.034l1.593-3.826l-7.68-2.495c-2.506 5.64-4.88 11.216-5.092 12.265c-.362 1.787-.617 4.374.338 6.513a9.107 9.107 0 0 0 16.632-7.423m-3.55 4.736a4.553 4.553 0 1 1-8.878-2.027a4.553 4.553 0 0 1 8.878 2.027M26.373 38.238a9.08 9.08 0 0 0-4.915-5.41a9.107 9.107 0 0 0-7.423 16.632c2.14.955 4.726.7 6.513.338c.293-.059.898-.27 1.742-.597m-3.541-3.945a4.553 4.553 0 1 1-2.027-8.878a4.553 4.553 0 0 1 2.027 8.878m27.876-14.909l14.247-5.982c-1.004 6.808-7.182 10.47-11.194 12.542c-1.312.677-3.311 1.693-7.165 3.463"
-                        />
-                    </g>
-                </svg>
-            </div>
-            <p>Free Video Trimmer</p>
+<div class="h-screen flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="flex-shrink-0 bg-white border-b px-4 py-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 72 72">
+                <path fill="#ea5a47" d="M24.488 52.117c-.544 2.69-.44 4.994.305 6.66c2.054 4.6 7.465 6.677 12.07 4.62a9.07 9.07 0 0 0 4.809-5.078a9.08 9.08 0 0 0-.19-6.992c-1.097-2.459-2.47-4.353-5.066-5.103c-.31-.09-.04-1.131.084-1.427l.84-2.813l-7.6-2.53c-3.42 7.73-5.104 11.923-5.252 12.663m10.032-2.005a4.68 4.68 0 0 1 2.938 2.083a4.68 4.68 0 0 1 .602 3.551a4.68 4.68 0 0 1-2.083 2.938a4.68 4.68 0 0 1-3.551.602a4.68 4.68 0 0 1-2.938-2.084a4.68 4.68 0 0 1-.602-3.55a4.67 4.67 0 0 1 2.084-2.938a4.68 4.68 0 0 1 3.55-.602"/>
+                <path fill="#d22f27" d="M21.833 32.884c-4.082-1.822-10.4.207-12.222 4.288c-1.823 4.083-.179 10.431 3.903 12.254c1.478.66 3.943 1.056 6.33.573c.103-.02 3.367-.227 2.978.026l2.285-1.063c1.178-2.972 4.716-11.343 5.006-11.988l-2.738 1.313l-.006.012c-.018.284-3.478-4.495-5.536-5.415m-.249 10.35a4.5 4.5 0 0 1-2.837 2.013a4.55 4.55 0 0 1-5.442-3.419a4.5 4.5 0 0 1 .582-3.43a4.5 4.5 0 0 1 2.837-2.011a4.52 4.52 0 0 1 3.43.581a4.5 4.5 0 0 1 2.012 2.837a4.5 4.5 0 0 1-.582 3.43"/>
+                <g fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="2">
+                    <path d="M29.584 39.621c3.058-6.88 6.652-14.644 7.8-16.865c2.07-4.012 5.733-10.19 12.54-11.194l-12.66 30.554"/>
+                    <path d="M41.462 50.976a9.08 9.08 0 0 0-5.791-5.034l1.593-3.826l-7.68-2.495c-2.506 5.64-4.88 11.216-5.092 12.265c-.362 1.787-.617 4.374.338 6.513a9.107 9.107 0 0 0 16.632-7.423m-3.55 4.736a4.553 4.553 0 1 1-8.878-2.027a4.553 4.553 0 0 1 8.878 2.027M26.373 38.238a9.08 9.08 0 0 0-4.915-5.41a9.107 9.107 0 0 0-7.423 16.632c2.14.955 4.726.7 6.513.338c.293-.059.898-.27 1.742-.597m-3.541-3.945a4.553 4.553 0 1 1-2.027-8.878a4.553 4.553 0 0 1 2.027 8.878"/>
+                </g>
+            </svg>
+            <span class="font-bold text-lg">VideoBarber</span>
         </div>
+        <span class="text-xs text-gray-500 hidden sm:inline">Free Video Trimmer</span>
+    </header>
 
-        <div class="mb-4 w-full md:w-1/2 mx-auto">
-            <label for="video-upload" class="block mb-2">Select a video file:</label>
-            <input
-                type="file"
-                id="video-upload"
-                accept="video/*"
-                on:change={handleFileSelect}
-                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mb-4"
-            />
-        </div>
-
+    <!-- Main Content -->
+    <main 
+        class="flex-1 flex flex-col lg:flex-row overflow-hidden"
+        on:dragenter={handleDragEnter}
+        on:dragleave={handleDragLeave}
+        on:dragover={handleDragOver}
+        on:drop={handleDrop}
+    >
         {#if loaded}
             {#if videoSrc}
-                <VideoPlayer
-                    bind:this={videoPlayer}
-                    {videoSrc}
-                    bind:currentTime
-                    {startTime}
-                    {endTime}
-                    on:loadedmetadata={handleLoadedMetadata}
-                    on:timeupdate={handleTimeUpdate}
-                />
+                <!-- Left Side: Video -->
+                <div class="flex-1 flex flex-col p-4 overflow-auto">
+                    <VideoPlayer
+                        bind:this={videoPlayer}
+                        {videoSrc}
+                        bind:currentTime
+                        {startTime}
+                        {endTime}
+                        on:loadedmetadata={handleLoadedMetadata}
+                        on:timeupdate={handleTimeUpdate}
+                    />
+                    
+                    <!-- Timeline -->
+                    <div class="mt-4">
+                        <VideoTrimmer
+                            {videoDuration}
+                            bind:startTime
+                            bind:endTime
+                            {videoSrc}
+                            on:trimchange={handleTrimChange}
+                            on:previewchange={handlePreviewChange}
+                        />
+                    </div>
+                </div>
 
-                <VideoTrimmer
-                    {videoDuration}
-                    bind:startTime
-                    bind:endTime
-                    {videoSrc}
-                    on:trimchange={handleTrimChange}
-                    on:previewchange={handlePreviewChange}
-                />
+                <!-- Right Side: Controls -->
+                <div class="lg:w-80 bg-gray-50 border-t lg:border-t-0 lg:border-l p-4 flex flex-col gap-4 overflow-auto">
+                    <!-- File Info -->
+                    <div class="bg-white rounded-lg p-3 border">
+                        <h3 class="font-semibold text-sm mb-1">Source File</h3>
+                        <p class="text-xs text-gray-600 truncate">{fileName}</p>
+                    </div>
 
-                <ExportSettings
-                    bind:outputFormat
-                    bind:videoQuality
-                    bind:audioEnabled
-                    bind:isGif
-                />
+                    <!-- Export File Name -->
+                    <div class="bg-white rounded-lg p-3 border">
+                        <h3 class="font-semibold text-sm mb-2">Export Name</h3>
+                        <div class="flex items-center gap-2">
+                            <input
+                                type="text"
+                                bind:value={exportFileName}
+                                placeholder="Enter file name"
+                                class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span class="text-sm text-gray-500">.{isGif ? 'gif' : outputFormat}</span>
+                        </div>
+                    </div>
 
-                <div class="mt-6 text-center mb-8">
+                    <!-- Export Settings -->
+                    <div class="bg-white rounded-lg p-3 border">
+                        <h3 class="font-semibold text-sm mb-2">Export Settings</h3>
+                        <ExportSettings
+                            bind:outputFormat
+                            bind:videoQuality
+                            bind:audioEnabled
+                            bind:isGif
+                        />
+                    </div>
+
+                    <!-- Download Button -->
                     <button
                         on:click={handleDownload}
-                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         disabled={isProcessing}
                     >
                         {#if isProcessing}
-                            Processing...
+                            <span class="flex items-center justify-center gap-2">
+                                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Processing...
+                            </span>
                         {:else}
                             Download {isGif ? 'GIF' : outputFormat.toUpperCase()}
                         {/if}
                     </button>
                 </div>
             {:else}
-                <p class="text-center text-gray-500">
-                    Please select a video file to start trimming.
-                </p>
+                <!-- Upload State with Drag & Drop -->
+                <div class="flex-1 flex items-center justify-center p-4">
+                    <div 
+                        class="w-full max-w-md text-center transition-all duration-200 {isDragging ? 'scale-105' : ''}"
+                    >
+                        <div 
+                            class="border-2 border-dashed rounded-xl p-8 transition-colors {isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'}"
+                        >
+                            <div class="mb-6">
+                                {#if isDragging}
+                                    <svg class="mx-auto h-16 w-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                {:else}
+                                    <svg class="mx-auto h-16 w-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                                    </svg>
+                                {/if}
+                            </div>
+                            
+                            <h2 class="text-xl font-semibold mb-2">
+                                {#if isDragging}
+                                    Drop video here
+                                {:else}
+                                    Upload Your Video
+                                {/if}
+                            </h2>
+                            <p class="text-gray-500 mb-6 text-sm">
+                                {isDragging ? 'Release to upload' : 'Drag & drop or click to select a video file'}
+                            </p>
+                            
+                            <label class="cursor-pointer inline-flex items-center justify-center px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+                                <span>Choose file</span>
+                                <input
+                                    type="file"
+                                    accept="video/*"
+                                    on:change={handleFileSelect}
+                                    class="hidden"
+                                />
+                            </label>
+                        </div>
+                    </div>
+                </div>
             {/if}
         {:else if ffmpegError != null}
-            <p class="text-center text-red-500">{ffmpegError}</p>
+            <div class="flex-1 flex items-center justify-center">
+                <p class="text-red-500">{ffmpegError}</p>
+            </div>
         {:else}
-            <p class="text-center text-gray-500">Loading ffmpeg...</p>
+            <div class="flex-1 flex items-center justify-center">
+                <div class="text-center">
+                    <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-gray-500">Loading ffmpeg...</p>
+                </div>
+            </div>
         {/if}
-    </div>
+    </main>
 
-    <div class="fixed bottom-0 p-0 md:p-2 left-0 right-0 text-center">
-        <p>@bagusindrayana</p>
-    </div>
-</main>
+    <!-- Footer -->
+    <footer class="flex-shrink-0 bg-white border-t px-4 py-2 text-center text-xs text-gray-500">
+        @bagusindrayana
+    </footer>
+</div>
