@@ -16,12 +16,14 @@
     let videoPlayer: VideoPlayer;
     let videoBlob: Blob | null = null;
     let isProcessing = false;
+    let isCancelled = false;
+    let progress = 0;
     let fileName: string;
     let ffmpegError: string | null = null;
 
     // Export settings
     let outputFormat = "mp4";
-    let videoQuality = "high";
+    let videoQuality = "original";
     let audioEnabled = true;
     let isGif = false;
     let exportFileName = "trimmed-video";
@@ -29,6 +31,38 @@
     // Drag and drop state
     let isDragging = false;
     let dragCounter = 0;
+
+    // Export logs
+    interface ExportLog {
+        id: number;
+        filename: string;
+        format: string;
+        status: 'success' | 'failed' | 'cancelled';
+        message: string;
+        timestamp: Date;
+    }
+    let exportLogs: ExportLog[] = [];
+    let logIdCounter = 0;
+
+    function addLog(filename: string, format: string, status: 'success' | 'failed' | 'cancelled', message: string) {
+        const log: ExportLog = {
+            id: logIdCounter++,
+            filename,
+            format,
+            status,
+            message,
+            timestamp: new Date()
+        };
+        exportLogs = [log, ...exportLogs].slice(0, 10); // Keep last 10 logs
+    }
+
+    function clearLogs() {
+        exportLogs = [];
+    }
+
+    function formatTimestamp(date: Date): string {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
     onMount(() => {
         loadFfmpeg();
@@ -114,7 +148,8 @@
         ffmpegRef.on("log", ({ message }) => {
             console.log(message);
         });
-        ffmpegRef.on("progress", ({ progress, time }) => {
+        ffmpegRef.on("progress", ({ progress: p, time }) => {
+            progress = Math.round(p * 100);
             console.log(progress, time);
         });
         try {
@@ -127,6 +162,15 @@
             ffmpegError = "Failed load ffmpeg : " + error;
         }
     };
+
+    function cancelExport() {
+        isCancelled = true;
+        isProcessing = false;
+        progress = 0;
+        const extension = isGif ? "gif" : outputFormat;
+        const finalFileName = exportFileName.trim() || "trimmed-video";
+        addLog(finalFileName, extension, 'cancelled', 'Export cancelled by user');
+    }
 
     function handleLoadedMetadata(event: CustomEvent) {
         videoDuration = event.detail.duration;
@@ -168,19 +212,22 @@
     function getQualitySettings(quality: string): string[] {
         switch (quality) {
             case "high":
-                return ["-vf", "scale=-2:1080", "-crf", "23"];
+                return ["-vf", "scale=-2:1080", "-preset", "ultrafast", "-crf", "28"];
             case "medium":
-                return ["-vf", "scale=-2:720", "-crf", "28"];
+                return ["-vf", "scale=-2:720", "-preset", "ultrafast", "-crf", "32"];
             case "low":
-                return ["-vf", "scale=-2:480", "-crf", "35"];
+                return ["-vf", "scale=-2:480", "-preset", "ultrafast", "-crf", "35"];
             default:
-                return ["-c:v", "copy"];
+                return ["-c:v", "copy", "-c:a", "copy"];
         }
     }
 
-    function getAudioSettings(audioEnabled: boolean): string[] {
+    function getAudioSettings(audioEnabled: boolean, quality: string): string[] {
         if (audioEnabled) {
-            return ["-c:a", "aac", "-b:a", "128k"];
+            if (quality === "original") {
+                return ["-c:a", "copy"];
+            }
+            return ["-c:a", "aac", "-b:a", "96k", "-preset", "ultrafast"];
         } else {
             return ["-an"];
         }
@@ -197,10 +244,15 @@
         }
 
         isProcessing = true;
+        isCancelled = false;
+        progress = 0;
+        const extension = isGif ? "gif" : outputFormat;
+        const finalFileName = exportFileName.trim() || "trimmed-video";
 
         try {
             let result: Blob;
-            const extension = isGif ? "gif" : outputFormat;
+
+            if (isCancelled) return;
 
             if (isGif) {
                 result = await createGif(videoBlob, startTime, endTime);
@@ -208,22 +260,31 @@
                 result = await trimVideo(videoBlob, startTime, endTime, outputFormat, videoQuality, audioEnabled);
             }
 
+            if (isCancelled) {
+                addLog(finalFileName, extension, 'cancelled', 'Export cancelled by user');
+                return;
+            }
+
             const url = URL.createObjectURL(result);
             const a = document.createElement("a");
             a.href = url;
-            
-            const finalFileName = exportFileName.trim() || "trimmed-video";
             a.download = `${finalFileName}.${extension}`;
             
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            
+            addLog(finalFileName, extension, 'success', 'Export completed successfully');
         } catch (error) {
             console.error("Error processing video:", error);
-            alert("An error occurred while processing the video. Please try again.");
+            addLog(finalFileName, extension, 'failed', error instanceof Error ? error.message : 'Unknown error');
+            if (!isCancelled) {
+                alert("An error occurred while processing the video. Please try again.");
+            }
         } finally {
             isProcessing = false;
+            progress = 0;
         }
     }
 
@@ -245,8 +306,7 @@
             "-ss", start.toString(),
             "-to", end.toString(),
             ...getQualitySettings(quality),
-            ...getAudioSettings(audio),
-            "-movflags", "+faststart",
+            ...getAudioSettings(audio, quality),
             outputFileName
         ];
         
@@ -352,16 +412,33 @@
                         on:timeupdate={handleTimeUpdate}
                     />
                     
-                    <!-- Timeline -->
+                    <!-- Timeline / Progress Bar -->
                     <div class="mt-4">
-                        <VideoTrimmer
-                            {videoDuration}
-                            bind:startTime
-                            bind:endTime
-                            {videoSrc}
-                            on:trimchange={handleTrimChange}
-                            on:previewchange={handlePreviewChange}
-                        />
+                        {#if isProcessing}
+                            <div class="w-full">
+                                <div class="flex justify-between text-xs text-gray-600 mb-1">
+                                    <span>Processing...</span>
+                                    <span>{progress}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+                                    <div 
+                                        class="bg-blue-500 h-6 rounded-full transition-all duration-300 flex items-center justify-center text-xs text-white font-medium"
+                                        style="width: {progress}%"
+                                    >
+                                        {progress}%
+                                    </div>
+                                </div>
+                            </div>
+                        {:else}
+                            <VideoTrimmer
+                                {videoDuration}
+                                bind:startTime
+                                bind:endTime
+                                {videoSrc}
+                                on:trimchange={handleTrimChange}
+                                on:previewchange={handlePreviewChange}
+                            />
+                        {/if}
                     </div>
                 </div>
 
@@ -381,7 +458,8 @@
                                 type="text"
                                 bind:value={exportFileName}
                                 placeholder="Enter file name"
-                                class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                disabled={isProcessing}
+                                class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                             />
                             <span class="text-sm text-gray-500">.{isGif ? 'gif' : outputFormat}</span>
                         </div>
@@ -395,27 +473,53 @@
                             bind:videoQuality
                             bind:audioEnabled
                             bind:isGif
+                            disabled={isProcessing}
                         />
                     </div>
 
-                    <!-- Download Button -->
+                    <!-- Download / Cancel Button -->
                     <button
-                        on:click={handleDownload}
-                        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        disabled={isProcessing}
+                        on:click={isProcessing ? cancelExport : handleDownload}
+                        class="w-full font-bold py-3 px-4 rounded-lg transition-colors {isProcessing ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed'}"
                     >
                         {#if isProcessing}
                             <span class="flex items-center justify-center gap-2">
-                                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Processing...
+                                Cancel ({progress}%)
                             </span>
                         {:else}
                             Download {isGif ? 'GIF' : outputFormat.toUpperCase()}
                         {/if}
                     </button>
+
+                    <!-- Export Logs -->
+                    {#if exportLogs.length > 0}
+                        <div class="bg-white rounded-lg p-3 border">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-semibold text-sm">Export Log</h3>
+                                <button 
+                                    on:click={clearLogs}
+                                    class="text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                    Clear
+                                </button>
+                            </div>
+                            <div class="max-h-32 overflow-y-auto space-y-1">
+                                {#each exportLogs as log (log.id)}
+                                    <div class="flex items-center gap-2 text-xs">
+                                        {#if log.status === 'success'}
+                                            <span class="text-green-500">✓</span>
+                                        {:else if log.status === 'failed'}
+                                            <span class="text-red-500">✗</span>
+                                        {:else}
+                                            <span class="text-yellow-500">⊘</span>
+                                        {/if}
+                                        <span class="truncate flex-1">{log.filename}.{log.format}</span>
+                                        <span class="text-gray-400">{formatTimestamp(log.timestamp)}</span>
+                                    </div>
+                                {/each}
+                            </div>
+                        </div>
+                    {/if}
                 </div>
             {:else}
                 <!-- Upload State with Drag & Drop -->

@@ -3,6 +3,7 @@
   export let videoQuality: string = "high";
   export let audioEnabled: boolean = true;
   export let isGif: boolean = false;
+  export let disabled: boolean = false;
 
   const formats = [
     { value: "mp4", label: "MP4" },
@@ -31,8 +32,8 @@
       <label class="block text-xs font-medium mb-1 text-gray-600">Format</label>
       <select
         bind:value={outputFormat}
-        disabled={isGif}
-        class="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-200"
+        disabled={disabled || isGif}
+        class="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
       >
         {#each formats as format}
           <option value={format.value}>{format.label}</option>
@@ -45,8 +46,8 @@
       <label class="block text-xs font-medium mb-1 text-gray-600">Quality</label>
       <select
         bind:value={videoQuality}
-        disabled={isGif}
-        class="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-200"
+        disabled={disabled || isGif}
+        class="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
       >
         {#each qualities as quality}
           <option value={quality.value}>{quality.label}</option>
@@ -56,21 +57,22 @@
 
     <!-- Options -->
     <div class="flex flex-col justify-center gap-1">
-      <label class="flex items-center gap-1 cursor-pointer">
+      <label class="flex items-center gap-1 cursor-pointer {disabled ? 'opacity-50' : ''}">
         <input
           type="checkbox"
           bind:checked={audioEnabled}
-          disabled={isGif}
+          disabled={disabled || isGif}
           class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 disabled:opacity-50"
         />
         <span class="text-xs {isGif ? 'text-gray-400' : 'text-gray-700'}">Audio</span>
       </label>
       
-      <label class="flex items-center gap-1 cursor-pointer">
+      <label class="flex items-center gap-1 cursor-pointer {disabled ? 'opacity-50' : ''}">
         <input
           type="checkbox"
           bind:checked={isGif}
-          class="w-3 h-3 text-green-600 rounded focus:ring-green-500"
+          disabled={disabled}
+          class="w-3 h-3 text-green-600 rounded focus:ring-green-500 disabled:opacity-50"
         />
         <span class="text-xs text-gray-700">GIF</span>
       </label>
